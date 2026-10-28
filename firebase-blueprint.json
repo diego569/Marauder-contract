@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "clause": {
+      "title": "Contract Clause",
+      "description": "A dynamic rule or clause in the magical contract.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The text of the clause."
+        },
+        "order": {
+          "type": "integer",
+          "description": "The display order of the clause."
+        }
+      },
+      "required": ["text", "order"]
+    },
+    "contract": {
+      "title": "Signed Contract",
+      "description": "A signed magical contract containing signatures and clauses snapshot.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "The status of the contract (e.g. signed)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when the contract was signed."
+        },
+        "signature1": {
+          "type": "string",
+          "description": "Base64 encoded PNG image for signature 1."
+        },
+        "signature2": {
+          "type": "string",
+          "description": "Base64 encoded PNG image for signature 2."
+        },
+        "clausesSnapshot": {
+          "type": "array",
+          "description": "Snapshot of the clauses at the time of signing.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" },
+              "order": { "type": "integer" }
+            },
+            "required": ["text", "order"]
+          }
+        }
+      },
+      "required": ["status", "createdAt", "signature1", "signature2", "clausesSnapshot"]
+    }
+  },
+  "firestore": {
+    "clauses": {
+      "schema": "clause",
+      "description": "The list of contract clauses."
+    },
+    "contracts": {
+      "schema": "contract",
+      "description": "The list of signed contracts."
+    }
+  }
+}
+

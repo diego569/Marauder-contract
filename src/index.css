@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Style+Script&family=MedievalSharp&family=Lumanosimo&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "MedievalSharp", serif;
+  --font-cursive: "Style Script", cursive;
+  --font-elegant: "Lumanosimo", cursive;
+  --font-garamond: "Cormorant Garamond", serif;
+  
+  --color-parchment: #f4e4bc;
+  --color-ink: #2c1810;
+  --color-wax: #8b0000;
+  --color-magical-brown: #4a3728;
+}
+
+@layer utilities {
+  .parchment {
+    background-color: var(--color-parchment);
+    background-image: 
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.05) 100%),
+      url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ink-text {
+    color: var(--color-ink);
+    font-family: var(--font-garamond);
+  }
+
+  .wax-seal {
+    background: var(--color-wax);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
+    border: 2px solid #5e0000;
+  }
+
+  .magical-border {
+    border: 8px double var(--color-magical-brown);
+    outline: 2px solid var(--color-magical-brown);
+    outline-offset: -12px;
+  }
+
+  .quill-cursor {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234a3728" d="M21 2c-3 0-6 2-7 5s-1 6-1 6l-9 9 3 3 9-9s3 0 6-1 5-4 5-7-2-6-6-6z"/></svg>'), auto;
+  }
+}
+

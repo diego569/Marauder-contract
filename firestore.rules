@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'diegoromani569@gmail.com' && request.auth.token.email_verified == true
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Clause validation
+    function isValidClause(data) {
+      return data.text is string && data.text.size() > 0 && data.text.size() <= 1000
+        && data.order is int && data.order >= 0;
+    }
+
+    // Contract validation
+    function isValidContract(data) {
+      return data.status == 'signed'
+        && data.createdAt is string
+        && data.signature1 is string && data.signature1.size() > 0 && data.signature1.size() <= 250000
+        && data.signature2 is string && data.signature2.size() > 0 && data.signature2.size() <= 250000
+        && data.clausesSnapshot is list;
+    }
+
+    // Test connection check
+    match /test/connection {
+      allow read: if true;
+    }
+
+    match /clauses/{clauseId} {
+      allow read: if true; // Public can see the contract clauses
+      
+      allow create: if isAdmin() && isValidId(clauseId) && isValidClause(incoming())
+        && incoming().keys().hasAll(['text', 'order']) && incoming().keys().size() == 2;
+        
+      allow update: if isAdmin() && isValidClause(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['text', 'order']);
+        
+      allow delete: if isAdmin();
+    }
+
+    match /contracts/{contractId} {
+      allow read, create: if true; // Public can read and create contracts
+      allow update, delete: if false; // Contracts are immutable once bound
+    }
+  }
+}
