@@ -16,6 +16,13 @@ export interface ContractPayload {
   signature1: string;
   signature2: string;
   clausesSnapshot: Clause[];
+  draftId?: string | null;
+}
+
+export interface DraftPayload {
+  signature1: string | null;
+  signature2: string | null;
+  clausesSnapshot: Clause[];
 }
 
 export interface SavedContract {
@@ -100,13 +107,26 @@ export async function saveContract(payload: ContractPayload): Promise<SavedContr
   return res.json();
 }
 
-export async function getContract(id: string): Promise<SavedContract & { signature1: string; signature2: string; clauses_snapshot: Clause[] }> {
+export async function saveDraft(payload: DraftPayload): Promise<SavedContract> {
+  const res = await fetch(`${BASE}/contracts/draft`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Failed to save contract draft: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function getContract(id: string): Promise<SavedContract & { signature1: string | null; signature2: string | null; clauses_snapshot: Clause[] }> {
   const res = await fetch(`${BASE}/contracts/${id}`);
   if (!res.ok) throw new Error(`Contract not found: ${res.statusText}`);
   return res.json();
 }
 
-export async function getLatestContract(): Promise<SavedContract & { signature1: string; signature2: string; clauses_snapshot: Clause[] } | null> {
+export async function getLatestContract(): Promise<SavedContract & { signature1: string | null; signature2: string | null; clauses_snapshot: Clause[] } | null> {
   const res = await fetch(`${BASE}/contracts/latest?_=${Date.now()}`);
   if (!res.ok) {
     if (res.status === 404) return null;

@@ -7,6 +7,7 @@ import {
   updateClause,
   deleteClause,
   createContract,
+  saveDraft,
   getContractById,
   getLatestContract,
   deleteAllContracts,
@@ -102,16 +103,33 @@ app.delete('/api/clauses/:id', requireAdmin, async (req, res) => {
 
 app.post('/api/contracts', async (req, res) => {
   try {
-    const { signature1, signature2, clausesSnapshot } = req.body;
+    const { signature1, signature2, clausesSnapshot, draftId } = req.body;
     if (!signature1 || !signature2 || !Array.isArray(clausesSnapshot)) {
       res.status(400).json({ error: 'signature1, signature2, and clausesSnapshot are required' });
       return;
     }
-    const contract = await createContract(signature1, signature2, clausesSnapshot);
+    const contract = await createContract(signature1, signature2, clausesSnapshot, draftId);
     res.status(201).json(contract);
   } catch (err) {
     console.error('POST /api/contracts error:', err);
     res.status(500).json({ error: 'Failed to save contract' });
+  }
+});
+
+// Save each signature immediately, so a partially signed vow survives reloads.
+app.put('/api/contracts/draft', async (req, res) => {
+  try {
+    const { signature1, signature2, clausesSnapshot } = req.body;
+    const validSignature = (signature: unknown) => signature === null || typeof signature === 'string';
+    if (!validSignature(signature1) || !validSignature(signature2) || !Array.isArray(clausesSnapshot)) {
+      res.status(400).json({ error: 'signatures must be strings or null, and clausesSnapshot is required' });
+      return;
+    }
+    const draft = await saveDraft(signature1, signature2, clausesSnapshot);
+    res.json(draft);
+  } catch (err) {
+    console.error('PUT /api/contracts/draft error:', err);
+    res.status(500).json({ error: 'Failed to save contract draft' });
   }
 });
 

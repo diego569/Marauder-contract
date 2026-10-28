@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
 import { Send, Check, Loader2 } from 'lucide-react';
-import { getClauses, saveContract, getLatestContract } from '../lib/api';
+import { getClauses, saveContract, saveDraft, getLatestContract } from '../lib/api';
 import { Clause } from '../types';
 import SignatureModal from './SignatureModal';
 
@@ -56,6 +56,7 @@ export default function MagicalContract({ refreshKey }: { refreshKey?: number })
   const [isExporting, setIsExporting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingSignature, setIsSavingSignature] = useState(false);
   const [savedContractId, setSavedContractId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -72,9 +73,9 @@ export default function MagicalContract({ refreshKey }: { refreshKey?: number })
         if (!cancelled) {
           if (latestContract) {
             setClauses(latestContract.clauses_snapshot);
-            setSignature1(latestContract.signature1);
-            setSignature2(latestContract.signature2);
-            setIsSigned(true);
+            setSignature1(latestContract.signature1 ?? null);
+            setSignature2(latestContract.signature2 ?? null);
+            setIsSigned(latestContract.status === 'signed');
             setSavedContractId(latestContract.id);
           } else {
             const clausesData = await getClauses();
@@ -166,6 +167,7 @@ export default function MagicalContract({ refreshKey }: { refreshKey?: number })
         signature1,
         signature2,
         clausesSnapshot: clauses.map(c => ({ id: c.id, title: c.title, text: c.text, order: c.order })),
+        draftId: savedContractId,
       });
       setSavedContractId(saved.id);
       setIsSigned(true);
@@ -192,7 +194,7 @@ export default function MagicalContract({ refreshKey }: { refreshKey?: number })
     <div className="flex-1 flex flex-col items-center">
       <button
         onClick={onSign}
-        disabled={isSigned}
+        disabled={isSigned || isSavingSignature}
         className="relative w-full h-24 flex flex-col items-center justify-end group transition-all"
       >
         <AnimatePresence>
@@ -336,10 +338,27 @@ export default function MagicalContract({ refreshKey }: { refreshKey?: number })
         <AnimatePresence>
           {activeSigner && (
             <SignatureModal
-              onSave={data => {
-                if (activeSigner === 1) setSignature1(data);
-                else setSignature2(data);
-                setActiveSigner(null);
+              onSave={async data => {
+                const nextSignature1 = activeSigner === 1 ? data : signature1;
+                const nextSignature2 = activeSigner === 2 ? data : signature2;
+                setSignature1(nextSignature1);
+                setSignature2(nextSignature2);
+                setIsSavingSignature(true);
+                try {
+                  const draft = await saveDraft({
+                    signature1: nextSignature1,
+                    signature2: nextSignature2,
+                    clausesSnapshot: clauses.map(c => ({ id: c.id, title: c.title, text: c.text, order: c.order })),
+                  });
+                  setSavedContractId(draft.id);
+                  setActiveSigner(null);
+                } catch (error) {
+                  console.error('Error saving signature draft:', error);
+                  const errMsg = error instanceof Error ? error.message : String(error);
+                  alert(`No se pudo guardar la firma: ${errMsg}`);
+                } finally {
+                  setIsSavingSignature(false);
+                }
               }}
               onClose={() => setActiveSigner(null)}
             />
